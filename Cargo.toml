@@ -72,7 +72,7 @@ open = "5"
 dirs = "5"
 
 # Colored terminal output
-colored = "2"
+colored = "3"
 
 # Levenshtein distance (for tool name similarity)
 strsim = "0.11"

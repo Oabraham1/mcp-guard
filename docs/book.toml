@@ -1,0 +1,15 @@
+[book]
+title = "mcp-guard"
+authors = ["Ojima Abraham"]
+language = "en"
+multilingual = false
+src = "src"
+
+[build]
+build-dir = "book"
+
+[output.html]
+default-theme = "navy"
+preferred-dark-theme = "navy"
+git-repository-url = "https://github.com/oabraham1/mcp-guard"
+edit-url-template = "https://github.com/oabraham1/mcp-guard/edit/main/docs/{path}"

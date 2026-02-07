@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proxy Rules - mcp-guard</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><span>mcp</span>-guard</h1>
+            <nav>
+                <a href="/">Dashboard</a>
+                <a href="/audit">Audit Log</a>
+                <a href="/rules" class="active">Rules</a>
+            </nav>
+        </header>
+
+        <main>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Proxy Rules</span>
+                    <button class="btn btn-primary" onclick="showAddRule()">Add Rule</button>
+                </div>
+
+                <div id="rule-form" style="display: none; margin-bottom: 20px;">
+                    <form onsubmit="addRule(event)">
+                        <div class="filters">
+                            <input type="text" id="new-pattern" placeholder="Tool pattern (e.g., dangerous_*)" required>
+                            <select id="new-action">
+                                <option value="block">Block</option>
+                                <option value="allow">Allow</option>
+                                <option value="log">Log Only</option>
+                            </select>
+                            <input type="text" id="new-reason" placeholder="Block reason">
+                            <input type="number" id="new-priority" placeholder="Priority" value="0">
+                            <button type="submit" class="btn btn-primary">Add</button>
+                            <button type="button" class="btn" onclick="hideAddRule()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="rules-table" hx-get="/api/rules" hx-trigger="load" hx-swap="innerHTML">
+                    <div class="loading">Loading rules...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function showAddRule() {
+            document.getElementById('rule-form').style.display = 'block';
+        }
+
+        function hideAddRule() {
+            document.getElementById('rule-form').style.display = 'none';
+        }
+
+        function addRule(event) {
+            event.preventDefault();
+
+            const pattern = document.getElementById('new-pattern').value;
+            const actionType = document.getElementById('new-action').value;
+            const reason = document.getElementById('new-reason').value;
+            const priority = parseInt(document.getElementById('new-priority').value) || 0;
+
+            let action;
+            if (actionType === 'block') {
+                action = { type: 'block', reason: reason || 'Blocked by rule' };
+            } else if (actionType === 'allow') {
+                action = { type: 'allow' };
+            } else {
+                action = { type: 'log' };
+            }
+
+            fetch('/api/rules', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tool_pattern: pattern,
+                    action: action,
+                    priority: priority
+                })
+            }).then(() => {
+                hideAddRule();
+                htmx.ajax('GET', '/api/rules', '#rules-table');
+            });
+        }
+
+        function deleteRule(id) {
+            if (confirm('Delete this rule?')) {
+                fetch('/api/rules/' + id, { method: 'DELETE' })
+                    .then(() => htmx.ajax('GET', '/api/rules', '#rules-table'));
+            }
+        }
+
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.detail.target.id === 'rules-table') {
+                const data = JSON.parse(evt.detail.xhr.response);
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Pattern</th>
+                                <th>Action</th>
+                                <th>Priority</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                if (data.rules && data.rules.length > 0) {
+                    data.rules.forEach(rule => {
+                        let actionStr = rule.action.type;
+                        if (rule.action.type === 'block' && rule.action.reason) {
+                            actionStr += `: ${rule.action.reason}`;
+                        }
+
+                        html += `
+                            <tr>
+                                <td><code>${escapeHtml(rule.tool_pattern)}</code></td>
+                                <td>${escapeHtml(actionStr)}</td>
+                                <td>${rule.priority}</td>
+                                <td>
+                                    <button class="btn btn-danger" onclick="deleteRule('${rule.id}')">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    html += '<tr><td colspan="4" class="empty-state">No rules configured</td></tr>';
+                }
+
+                html += '</tbody></table>';
+                evt.detail.target.innerHTML = html;
+            }
+        });
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+[package]
+name = "mcp-guard"
+version = "0.1.0"
+edition = "2021"
+authors = ["Ojima Abraham <ojima@ojima.me>"]
+license = "MIT OR Apache-2.0"
+description = "Security scanner and proxy for MCP (Model Context Protocol) servers"
+repository = "https://github.com/oabraham1/mcp-guard"
+keywords = ["mcp", "security", "llm", "scanner", "proxy"]
+categories = ["command-line-utilities", "development-tools"]
+
+[dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# CLI
+clap = { version = "4", features = ["derive", "env"] }
+clap_complete = "4"
+shell-words = "1"
+
+# HTTP server (API + UI)
+axum = { version = "0.7", features = ["ws"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+
+# HTTP client (for SSE transport)
+reqwest = { version = "0.12", features = ["json", "stream"] }
+
+# Database
+rusqlite = { version = "0.32", features = ["bundled"] }
+r2d2 = "0.8"
+r2d2_sqlite = "0.25"
+
+# Logging/tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Error handling
+anyhow = "1"
+thiserror = "1"
+
+# Diffing (for snapshot comparison)
+similar = "2"
+
+# File watching (for `watch` command)
+notify = "7"
+
+# Hashing (for snapshot hashes)
+sha2 = "0.10"
+hex = "0.4"
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Regex (for threat detection patterns)
+regex = "1"
+
+# Glob (for proxy rule patterns)
+glob = "0.3"
+
+# UUID (for rule IDs)
+uuid = { version = "1", features = ["v4"] }
+
+# Open browser (for `serve` command)
+open = "5"
+
+# Directory paths (cross-platform)
+dirs = "5"
+
+# Colored terminal output
+colored = "2"
+
+# Levenshtein distance (for tool name similarity)
+strsim = "0.11"
+
+# Base64 detection
+base64 = "0.22"
+
+# Async trait
+async-trait = "0.1"
+
+# Futures utilities
+futures = "0.3"
+
+# TOML config parsing
+toml = "0.8"
+
+[dev-dependencies]
+tempfile = "3"
+assert_cmd = "2"
+predicates = "3"
+tokio-test = "0.4"
+wiremock = "0.6"
+
+[[bin]]
+name = "mcp-guard"
+path = "src/main.rs"

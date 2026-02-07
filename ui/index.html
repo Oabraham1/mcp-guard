@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mcp-guard</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><span>mcp</span>-guard</h1>
+            <nav>
+                <a href="/" class="active">Dashboard</a>
+                <a href="/audit">Audit Log</a>
+                <a href="/rules">Rules</a>
+            </nav>
+        </header>
+
+        <main>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Server Overview</span>
+                    <button class="btn btn-primary"
+                            hx-post="/api/scan"
+                            hx-target="#scan-results"
+                            hx-indicator=".loading-indicator">
+                        <span class="loading-indicator"><span class="spinner"></span></span>
+                        Scan All
+                    </button>
+                </div>
+
+                <div id="servers" hx-get="/api/servers" hx-trigger="load" hx-swap="innerHTML">
+                    <div class="loading">Loading servers...</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Latest Scan Results</span>
+                </div>
+                <div id="scan-results">
+                    <div class="empty-state">Run a scan to see results</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Format server list response
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.detail.target.id === 'servers') {
+                const data = JSON.parse(evt.detail.xhr.response);
+                let html = '<div class="grid">';
+
+                if (data.servers && data.servers.length > 0) {
+                    data.servers.forEach(server => {
+                        html += `
+                            <div class="card server-card">
+                                <div class="server-name">${escapeHtml(server.name)}</div>
+                                <div class="server-source">${escapeHtml(server.source)}</div>
+                                <div class="server-stats">
+                                    <span>Transport: ${escapeHtml(server.transport)}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += '<div class="empty-state">No MCP servers configured</div>';
+                }
+
+                html += '</div>';
+                evt.detail.target.innerHTML = html;
+            }
+
+            if (evt.detail.target.id === 'scan-results') {
+                const data = JSON.parse(evt.detail.xhr.response);
+                let html = `
+                    <div class="summary">
+                        <div class="summary-item">
+                            <div class="summary-value">${data.servers_scanned}</div>
+                            <div class="summary-label">Servers Scanned</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value">${data.total_threats}</div>
+                            <div class="summary-label">Threats Found</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value">${data.servers_failed}</div>
+                            <div class="summary-label">Failed</div>
+                        </div>
+                    </div>
+                `;
+
+                if (data.results && data.results.length > 0) {
+                    data.results.forEach(result => {
+                        html += `
+                            <div class="card">
+                                <div class="card-header">
+                                    <span class="card-title">${escapeHtml(result.server_name)}</span>
+                                    <span>${result.tool_count} tools</span>
+                                </div>
+                        `;
+
+                        if (result.threats && result.threats.length > 0) {
+                            html += '<div class="threat-list">';
+                            result.threats.forEach(threat => {
+                                html += `
+                                    <div class="threat-item ${threat.severity}">
+                                        <div class="threat-title">
+                                            <span class="badge badge-${threat.severity}">${threat.severity}</span>
+                                            ${escapeHtml(threat.title)}
+                                        </div>
+                                        <div class="threat-message">${escapeHtml(threat.message)}</div>
+                                    </div>
+                                `;
+                            });
+                            html += '</div>';
+                        } else {
+                            html += '<div class="empty-state">No threats detected</div>';
+                        }
+
+                        html += '</div>';
+                    });
+                }
+
+                evt.detail.target.innerHTML = html;
+            }
+        });
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

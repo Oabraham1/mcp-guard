@@ -69,7 +69,7 @@ uuid = { version = "1", features = ["v4"] }
 open = "5"
 
 # Directory paths (cross-platform)
-dirs = "5"
+dirs = "6"
 
 # Colored terminal output
 colored = "2"
